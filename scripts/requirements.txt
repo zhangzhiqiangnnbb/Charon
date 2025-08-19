@@ -1,0 +1,7 @@
+qrcode[pil]==7.4.2
+Pillow==10.4.0
+pyzbar==0.1.9
+reedsolo==1.7.0
+cryptography==43.0.3  # 提供AES-GCM与PBKDF2
+opencv-python==4.10.0.84
+moviepy==1.0.3
