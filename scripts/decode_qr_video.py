@@ -26,9 +26,11 @@ except Exception as e:
     sys.exit(2)
 
 
+FFMPEG_CMD = os.environ.get('FFMPEG_CMD', 'ffmpeg')
+
 def extract_frames(video_path: str, output_dir: Path):
     """从视频提取帧为PNG"""
-    cmd = ['ffmpeg', '-i', str(video_path), '-vsync', '0', '-f', 'image2', str(output_dir / '%06d.png')]
+    cmd = [FFMPEG_CMD, '-i', str(video_path), '-vsync', '0', '-f', 'image2', str(output_dir / '%06d.png')]
     subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 

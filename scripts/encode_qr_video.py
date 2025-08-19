@@ -320,8 +320,9 @@ def main():
         im.save(tmp_out / f"{i:06d}.png")
 
     # 用ffmpeg合成视频
+    ffmpeg = os.environ.get('FFMPEG_CMD', 'ffmpeg')
     cmd = [
-        'ffmpeg', '-y', '-r', str(args.fps), '-i', str(tmp_out / '%06d.png'),
+        ffmpeg, '-y', '-r', str(args.fps), '-i', str(tmp_out / '%06d.png'),
         '-c:v', 'libx264', '-preset', 'slow', '-crf', '16', '-pix_fmt', 'yuv420p', args.output
     ]
     try:

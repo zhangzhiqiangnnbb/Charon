@@ -100,6 +100,8 @@ public class VideoCodeService {
                 "--privkey-frame", privateKeyFrameIndex == null ? "0" : String.valueOf(privateKeyFrameIndex),
                 "--privkey-frame-pass", privateKeyFramePassword
         );
+        // 注入FFMPEG_CMD给子进程
+        pb.environment().put("FFMPEG_CMD", ffmpegCmd);
         if (width != null && height != null) {
             pb.command().add("--width");
             pb.command().add(String.valueOf(width));
