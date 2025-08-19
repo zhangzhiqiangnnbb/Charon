@@ -36,20 +36,20 @@ public class VideoCodeController {
     }
 
     public record EncodeRequest(
-            @NotNull MultipartFile file,
-            @Min(1) @Max(8) Integer gridN,
-            @Min(1) @Max(120) Integer fps,
-            @Pattern(regexp = "(?i)1080p|720p|4k|2160p|custom") String resolution,
-            @Min(64) @Max(4096) Integer width,
-            @Min(64) @Max(4096) Integer height,
-            Boolean enableFec,
-            @Min(0) @Max(100) Integer fecParityPercent,
-            @NotBlank String passphrase,
-            @NotBlank String publicKeyHint,
-            @Min(0) Integer privateKeyFrameIndex,
-            @NotBlank String privateKeyFramePassword,
-            @Min(0) Integer obfuscationSeed,
-            @RequestParam(required = false) MultipartFile obfuscationFile
+            @NotNull MultipartFile file, // 上传的原始文件 | Uploaded source file
+            @Min(1) @Max(8) Integer gridN, // 每帧二维码网格尺寸 N（N×N），影响容量与纠错 | QR grid size N per frame (N×N), affects capacity and ECC
+            @Min(1) @Max(120) Integer fps, // 输出视频帧率 | Output video FPS
+            @Pattern(regexp = "(?i)1080p|720p|4k|2160p|custom") String resolution, // 预设分辨率或 custom | Preset resolution or custom
+            @Min(64) @Max(4096) Integer width, // 自定义分辨率宽（resolution=custom 时生效） | Custom width (effective when resolution=custom)
+            @Min(64) @Max(4096) Integer height, // 自定义分辨率高（resolution=custom 时生效） | Custom height (effective when resolution=custom)
+            Boolean enableFec, // 是否启用前向纠错 FEC | Whether to enable forward error correction (FEC)
+            @Min(0) @Max(100) Integer fecParityPercent, // FEC 冗余比例（0-100%） | FEC parity percentage (0-100%)
+            @NotBlank String passphrase, // 加密口令，用于派生加密密钥 | Encryption passphrase, used to derive key
+            @NotBlank String publicKeyHint, // 公钥提示（指纹/标识）用于选择公钥 | Public key hint (fingerprint/identifier) to select public key
+            @Min(0) Integer privateKeyFrameIndex, // 私钥帧索引（用于解密） | Private key frame index (for decryption)
+            @NotBlank String privateKeyFramePassword, // 私钥帧的保护密码（解密私钥） | Password protecting the private key frame (decrypts private key)
+            @Min(0) Integer obfuscationSeed, // 混淆种子（若启用混淆） | Obfuscation seed (if enabled)
+            @RequestParam(required = false) MultipartFile obfuscationFile // 混淆验证文件（可选） | Obfuscation verification file (optional)
     ) {}
 
     @PostMapping(value = "/encode", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

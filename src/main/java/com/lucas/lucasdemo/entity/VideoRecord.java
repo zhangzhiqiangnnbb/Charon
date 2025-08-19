@@ -4,22 +4,25 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import lombok.Data;
+
 import java.time.LocalDateTime;
 
 @TableName("video_records")
+@Data
 public class VideoRecord {
 
     @TableId(type = IdType.AUTO)
-    private Long id;
+    private Long id;                  // 主键ID，自增 | Primary key ID (auto-increment)
 
     @TableField("jobId")
-    private String jobId;
+    private String jobId;             // 任务ID（唯一作业标识） | Job ID (unique job identifier)
 
     @TableField("originalFileName")
-    private String originalFileName;
+    private String originalFileName;  // 原始文件名 | Original file name
 
     @TableField("originalFileSize")
-    private Long originalFileSize;
+    private Long originalFileSize;    // 原始文件大小（字节） | Original file size (bytes)
 
     @TableField("storagePath")
     private String storagePath;       // 视频文件存储路径（对象存储Key或本地路径） | Video file storage path (object storage key or local path)
@@ -29,222 +32,53 @@ public class VideoRecord {
 
     // 编码参数 | Encoding parameters
     @TableField("gridN")
-    private Integer gridN;
+    private Integer gridN;            // 每帧二维码网格大小 N（N×N） | QR grid size N per frame (N×N)
 
     @TableField("fps")
-    private Integer fps;
+    private Integer fps;              // 输出视频帧率 | Output video FPS
 
     @TableField("resolution")
-    private String resolution;
+    private String resolution;        // 输出视频分辨率（如 1920x1080） | Output video resolution (e.g., 1920x1080)
 
     @TableField("enableFec")
-    private Boolean enableFec;
+    private Boolean enableFec;        // 是否启用前向纠错FEC | Whether forward error correction (FEC) is enabled
 
     @TableField("fecParityPercent")
-    private Integer fecParityPercent;
+    private Integer fecParityPercent; // FEC 冗余比例（百分比） | FEC parity percentage (%)
 
     @TableField("publicKeyHint")
-    private String publicKeyHint;
+    private String publicKeyHint;     // 公钥提示（指纹或标识） | Public key hint (fingerprint or identifier)
 
     @TableField("privateKeyFrameIndex")
-    private Integer privateKeyFrameIndex;
+    private Integer privateKeyFrameIndex; // 私钥帧所在索引（用于解密） | Index of private key frame (for decryption)
 
     @TableField("obfuscationSeed")
-    private Integer obfuscationSeed;
+    private Integer obfuscationSeed;  // 混淆种子 | Obfuscation seed
 
     @TableField("obfuscationFilePath")
     private String obfuscationFilePath;   // 混淆文件存储路径（如果有） | Obfuscation file storage path (if any)
 
     // 状态与时间 | Status and timestamps
     @TableField("status")
-    private ProcessStatus status = ProcessStatus.PROCESSING;
+    private ProcessStatus status = ProcessStatus.PROCESSING; // 处理状态 | Processing status
 
     @TableField("errorMessage")
-    private String errorMessage;
+    private String errorMessage;      // 错误信息（失败原因） | Error message (failure reason)
 
     @TableField("createdAt")
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt = LocalDateTime.now(); // 创建时间 | Created time
 
     @TableField("completedAt")
-    private LocalDateTime completedAt;
+    private LocalDateTime completedAt; // 完成时间 | Completed time
 
     // 输出信息 | Output information
     @TableField("outputVideoSize")
-    private Long outputVideoSize;
+    private Long outputVideoSize;     // 输出视频文件大小（字节） | Output video file size (bytes)
 
     @TableField("outputFrameCount")
-    private Integer outputFrameCount;
+    private Integer outputFrameCount; // 输出视频总帧数 | Output video total frame count
 
     public enum ProcessStatus {
         PROCESSING, COMPLETED, FAILED
-    }
-
-    // Getters and Setters
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getJobId() {
-        return jobId;
-    }
-
-    public void setJobId(String jobId) {
-        this.jobId = jobId;
-    }
-
-    public String getOriginalFileName() {
-        return originalFileName;
-    }
-
-    public void setOriginalFileName(String originalFileName) {
-        this.originalFileName = originalFileName;
-    }
-
-    public Long getOriginalFileSize() {
-        return originalFileSize;
-    }
-
-    public void setOriginalFileSize(Long originalFileSize) {
-        this.originalFileSize = originalFileSize;
-    }
-
-    public String getStoragePath() {
-        return storagePath;
-    }
-
-    public void setStoragePath(String storagePath) {
-        this.storagePath = storagePath;
-    }
-
-    public String getManifestPath() {
-        return manifestPath;
-    }
-
-    public void setManifestPath(String manifestPath) {
-        this.manifestPath = manifestPath;
-    }
-
-    public Integer getGridN() {
-        return gridN;
-    }
-
-    public void setGridN(Integer gridN) {
-        this.gridN = gridN;
-    }
-
-    public Integer getFps() {
-        return fps;
-    }
-
-    public void setFps(Integer fps) {
-        this.fps = fps;
-    }
-
-    public String getResolution() {
-        return resolution;
-    }
-
-    public void setResolution(String resolution) {
-        this.resolution = resolution;
-    }
-
-    public Boolean getEnableFec() {
-        return enableFec;
-    }
-
-    public void setEnableFec(Boolean enableFec) {
-        this.enableFec = enableFec;
-    }
-
-    public Integer getFecParityPercent() {
-        return fecParityPercent;
-    }
-
-    public void setFecParityPercent(Integer fecParityPercent) {
-        this.fecParityPercent = fecParityPercent;
-    }
-
-    public String getPublicKeyHint() {
-        return publicKeyHint;
-    }
-
-    public void setPublicKeyHint(String publicKeyHint) {
-        this.publicKeyHint = publicKeyHint;
-    }
-
-    public Integer getPrivateKeyFrameIndex() {
-        return privateKeyFrameIndex;
-    }
-
-    public void setPrivateKeyFrameIndex(Integer privateKeyFrameIndex) {
-        this.privateKeyFrameIndex = privateKeyFrameIndex;
-    }
-
-    public Integer getObfuscationSeed() {
-        return obfuscationSeed;
-    }
-
-    public void setObfuscationSeed(Integer obfuscationSeed) {
-        this.obfuscationSeed = obfuscationSeed;
-    }
-
-    public String getObfuscationFilePath() {
-        return obfuscationFilePath;
-    }
-
-    public void setObfuscationFilePath(String obfuscationFilePath) {
-        this.obfuscationFilePath = obfuscationFilePath;
-    }
-
-    public ProcessStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(ProcessStatus status) {
-        this.status = status;
-    }
-
-    public String getErrorMessage() {
-        return errorMessage;
-    }
-
-    public void setErrorMessage(String errorMessage) {
-        this.errorMessage = errorMessage;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getCompletedAt() {
-        return completedAt;
-    }
-
-    public void setCompletedAt(LocalDateTime completedAt) {
-        this.completedAt = completedAt;
-    }
-
-    public Long getOutputVideoSize() {
-        return outputVideoSize;
-    }
-
-    public void setOutputVideoSize(Long outputVideoSize) {
-        this.outputVideoSize = outputVideoSize;
-    }
-
-    public Integer getOutputFrameCount() {
-        return outputFrameCount;
-    }
-
-    public void setOutputFrameCount(Integer outputFrameCount) {
-        this.outputFrameCount = outputFrameCount;
     }
 }
