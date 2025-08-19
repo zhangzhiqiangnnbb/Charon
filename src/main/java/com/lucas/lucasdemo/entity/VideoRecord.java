@@ -22,12 +22,12 @@ public class VideoRecord {
     private Long originalFileSize;
 
     @TableField("storagePath")
-    private String storagePath;       // 视频文件存储路径（对象存储Key或本地路径）
+    private String storagePath;       // 视频文件存储路径（对象存储Key或本地路径） | Video file storage path (object storage key or local path)
 
     @TableField("manifestPath")
-    private String manifestPath;      // 清单文件存储路径
+    private String manifestPath;      // 清单文件存储路径 | Manifest file storage path
 
-    // 编码参数
+    // 编码参数 | Encoding parameters
     @TableField("gridN")
     private Integer gridN;
 
@@ -53,9 +53,9 @@ public class VideoRecord {
     private Integer obfuscationSeed;
 
     @TableField("obfuscationFilePath")
-    private String obfuscationFilePath;   // 混淆文件存储路径（如果有）
+    private String obfuscationFilePath;   // 混淆文件存储路径（如果有） | Obfuscation file storage path (if any)
 
-    // 状态与时间
+    // 状态与时间 | Status and timestamps
     @TableField("status")
     private ProcessStatus status = ProcessStatus.PROCESSING;
 
@@ -68,7 +68,7 @@ public class VideoRecord {
     @TableField("completedAt")
     private LocalDateTime completedAt;
 
-    // 输出信息
+    // 输出信息 | Output information
     @TableField("outputVideoSize")
     private Long outputVideoSize;
 

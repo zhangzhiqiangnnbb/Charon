@@ -1,7 +1,13 @@
-qrcode[pil]==7.4.2
-Pillow==10.4.0
-pyzbar==0.1.9
-reedsolo==1.7.0
-cryptography==43.0.3  # 提供AES-GCM与PBKDF2
-opencv-python==4.10.0.84
-moviepy==1.0.3
+# Python依赖 | Python dependencies
+# 提供AES-GCM与PBKDF2 | Provides AES-GCM and PBKDF2
+cryptography>=41.0.0
+# 读取/写入图像 | Read/Write images
+Pillow>=9.5.0
+# 解析视频帧二维码 | Decode QR codes in frames
+pyzbar>=0.1.9
+# Reed-Solomon 纠错 | Reed-Solomon error correction
+reedsolo>=1.7.0
+# OpenCV 用于视频与图像处理 | OpenCV for video/image processing
+opencv-python>=4.8.0
+# 生成视频/音视频处理 | Video generation / processing
+moviepy>=1.0.3

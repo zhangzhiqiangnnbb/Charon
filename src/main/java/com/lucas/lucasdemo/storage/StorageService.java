@@ -13,7 +13,7 @@ import java.time.format.DateTimeFormatter;
 public class StorageService {
 
     @Value("${app.sample.storage.type:local}")
-    private String storageType; // local|minio (预留)
+    private String storageType; // local|minio (预留) | reserved for future use
 
     @Value("${app.sample.storage.local.base-dir:${user.home}/video-store}")
     private String baseDir;

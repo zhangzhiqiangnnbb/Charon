@@ -54,7 +54,7 @@ public class VideoCodeService {
         Path jobDir = Path.of(workdir, jobId);
         Files.createDirectories(jobDir);
 
-        // 保存上传文件到临时job目录
+        // 保存上传文件到临时job目录 | Save uploaded file to a temporary job directory
         Path inputZip = jobDir.resolve("input.zip");
         Files.copy(file.getInputStream(), inputZip, StandardCopyOption.REPLACE_EXISTING);
         Path obfPath = null;
@@ -63,7 +63,7 @@ public class VideoCodeService {
             Files.copy(obfuscationFile.getInputStream(), obfPath, StandardCopyOption.REPLACE_EXISTING);
         }
 
-        // 预建数据库记录（PROCESSING）
+        // 预建数据库记录（PROCESSING） | Pre-create database record (PROCESSING)
         VideoRecord vr = new VideoRecord();
         vr.setJobId(jobId);
         vr.setOriginalFileName(file.getOriginalFilename());
@@ -80,7 +80,7 @@ public class VideoCodeService {
         vr.setCreatedAt(LocalDateTime.now());
         repo.insert(vr);
 
-        // 调用python生成视频
+        // 调用python生成视频 | Invoke Python to generate video
         Path outputVideo = jobDir.resolve("output.mp4");
         Path manifestJson = jobDir.resolve("manifest.json");
         ProcessBuilder pb = new ProcessBuilder(
@@ -93,14 +93,14 @@ public class VideoCodeService {
                 "--fps", String.valueOf(fps),
                 "--resolution", resolution,
                 "--enable-fec", String.valueOf(enableFec),
-                // 转换百分比为浮点数比例（20% -> 0.2），限制在0.15-0.35之间
+                // 转换百分比为浮点数比例（20% -> 0.2），限制在0.15-0.35之间 | Convert percent to ratio (20% -> 0.2), clamp to 0.15-0.35
                 "--fec-ratio", String.valueOf(fecParityPercent == null ? 0.2 : Math.max(0.15, Math.min(0.35, fecParityPercent / 100.0))),
                 "--passphrase", passphrase,
                 "--pubkey-hint", publicKeyHint,
                 "--privkey-frame", privateKeyFrameIndex == null ? "0" : String.valueOf(privateKeyFrameIndex),
                 "--privkey-frame-pass", privateKeyFramePassword
         );
-        // 注入FFMPEG_CMD给子进程
+        // 注入FFMPEG_CMD给子进程 | Inject FFMPEG_CMD to the child process
         pb.environment().put("FFMPEG_CMD", ffmpegCmd);
         if (width != null && height != null) {
             pb.command().add("--width");
@@ -132,7 +132,7 @@ public class VideoCodeService {
             return res;
         }
 
-        // 将结果文件落地到对象存储（本地）
+        // 将结果文件落地到对象存储（本地） | Persist output files to object storage (local)
         String videoStorePath;
         String manifestStorePath;
         try (InputStream vin = Files.newInputStream(outputVideo);
