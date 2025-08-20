@@ -1,8 +1,8 @@
-package com.lucas.lucasdemo.repository;
+package com.Charon.repository;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.lucas.lucasdemo.entity.VideoRecord;
+import com.Charon.entity.VideoRecord;
 import org.apache.ibatis.annotations.Mapper;
 
 import java.util.Optional;

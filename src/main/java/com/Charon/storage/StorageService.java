@@ -1,4 +1,4 @@
-package com.lucas.lucasdemo.storage;
+package com.Charon.storage;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;

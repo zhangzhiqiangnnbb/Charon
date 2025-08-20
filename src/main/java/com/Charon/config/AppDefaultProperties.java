@@ -1,4 +1,4 @@
-package com.lucas.lucasdemo.config;
+package com.Charon.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;

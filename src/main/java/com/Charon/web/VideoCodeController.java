@@ -1,10 +1,10 @@
-package com.lucas.lucasdemo.web;
+package com.Charon.web;
 
-import com.lucas.lucasdemo.config.AppDefaultProperties;
-import com.lucas.lucasdemo.entity.VideoRecord;
-import com.lucas.lucasdemo.repository.VideoRecordRepository;
-import com.lucas.lucasdemo.service.VideoCodeService;
-import com.lucas.lucasdemo.storage.StorageService;
+import com.Charon.config.AppDefaultProperties;
+import com.Charon.entity.VideoRecord;
+import com.Charon.repository.VideoRecordRepository;
+import com.Charon.service.VideoCodeService;
+import com.Charon.storage.StorageService;
 import jakarta.validation.constraints.*;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;

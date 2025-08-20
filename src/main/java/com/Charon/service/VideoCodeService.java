@@ -1,8 +1,8 @@
-package com.lucas.lucasdemo.service;
+package com.Charon.service;
 
-import com.lucas.lucasdemo.entity.VideoRecord;
-import com.lucas.lucasdemo.repository.VideoRecordRepository;
-import com.lucas.lucasdemo.storage.StorageService;
+import com.Charon.entity.VideoRecord;
+import com.Charon.repository.VideoRecordRepository;
+import com.Charon.storage.StorageService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;

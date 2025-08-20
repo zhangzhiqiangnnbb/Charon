@@ -1,4 +1,4 @@
-package com.lucas.lucasdemo;
+package com.Charon;
 
 import org.junit.jupiter.api.Test;
 
