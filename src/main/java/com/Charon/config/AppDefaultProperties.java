@@ -4,7 +4,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 @Component
-@ConfigurationProperties(prefix = "app.sample.default")
+@ConfigurationProperties(prefix = "app.default")
 public class AppDefaultProperties {
     
     private Integer gridN = 2;

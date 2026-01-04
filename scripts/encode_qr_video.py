@@ -7,6 +7,8 @@ import os
 import secrets
 import string
 import subprocess
+import concurrent.futures
+import shutil
 import sys
 import tempfile
 from pathlib import Path
@@ -98,60 +100,25 @@ def encrypt_payload_aes_gcm(data: bytes, passphrase: str, pubkey_pem: bytes) -> 
 
 
 def create_cross_frame_fec(data_chunks: list[bytes], fec_ratio: float = 0.3) -> list[bytes]:
-    """
-    创建跨帧FEC编码，支持15-30%丢帧恢复 | Create cross-frame FEC encoding to support 15-30% frame loss recovery
-    使用Reed-Solomon编码，将数据块分组并添加冗余块 | Use Reed-Solomon encoding to group data blocks and add redundancy blocks
-    """
     chunk_count = len(data_chunks)
-    # 计算冗余块数量（支持30%丢帧） | Calculate redundancy block count (supports 30% frame loss)
     parity_count = max(1, int(chunk_count * fec_ratio))
-    
-    print(f"原始数据块: {chunk_count}, 冗余块: {parity_count}, 总块数: {chunk_count + parity_count}")
-    
-    # 使用Reed-Solomon编码 | Use Reed-Solomon encoding
     rs = RSCodec(parity_count)
-    
-    # 将所有数据块连接并进行RS编码 | Concatenate all data blocks and perform RS encoding
-    # 为了支持跨帧恢复，我们需要将数据重新组织 | To support cross-frame recovery, we need to reorganize the data
-    max_chunk_size = max(len(chunk) for chunk in data_chunks) if data_chunks else 1024
-    
-    # 将所有块填充到相同长度 | Pad all blocks to the same length
-    padded_chunks = []
-    for i, chunk in enumerate(data_chunks):
-        padded = chunk + b'\x00' * (max_chunk_size - len(chunk))
-        padded_chunks.append(padded)
-    
-    # 跨帧编码：将每个位置的字节进行RS编码 | Cross-frame encoding: perform RS encoding on bytes at each position
-    encoded_chunks = []
-    for i in range(max_chunk_size):
-        # 提取所有块在位置i的字节 | Extract bytes at position i from all blocks
-        position_bytes = bytes(chunk[i] for chunk in padded_chunks)
-        # 对这组字节进行RS编码 | Perform RS encoding on this group of bytes
-        encoded_position = rs.encode(position_bytes)
-        
-        # 将编码后的字节分配回对应的块 | Assign encoded bytes back to corresponding blocks
-        for j in range(len(encoded_position)):
-            if j < len(padded_chunks):
-                if j < len(encoded_chunks):
-                    encoded_chunks[j] += bytes([encoded_position[j]])
-                else:
-                    encoded_chunks.append(bytes([encoded_position[j]]))
+    max_chunk_size = max((len(c) for c in data_chunks), default=1024)
+    padded_chunks = [c.ljust(max_chunk_size, b"\x00") for c in data_chunks]
+    encoded_chunks: list[bytes] = [b"" for _ in range(chunk_count + parity_count)]
+    for column in zip(*padded_chunks):
+        encoded_position = rs.encode(bytes(column))
+        base_len = len(padded_chunks)
+        for j, b in enumerate(encoded_position):
+            if j < base_len:
+                encoded_chunks[j] += bytes([b])
             else:
-                # 这是冗余块 | This is a redundancy block
-                parity_idx = j - len(padded_chunks)
-                while len(encoded_chunks) <= len(data_chunks) + parity_idx:
-                    encoded_chunks.append(b'')
-                encoded_chunks[len(data_chunks) + parity_idx] += bytes([encoded_position[j]])
-    
-    # 记录原始长度信息，用于解码时去除填充 | Record original length information for removing padding during decoding
-    length_info = [len(chunk) for chunk in data_chunks]
-    
-    # 将长度信息编码到第一个冗余块的开头 | Encode length information at the beginning of the first redundancy block
-    length_data = json.dumps(length_info).encode('utf-8')
-    if encoded_chunks and len(encoded_chunks) > len(data_chunks):
-        # 在第一个冗余块前面插入长度信息 | Insert length information at the beginning of the first redundancy block
-        encoded_chunks[len(data_chunks)] = length_data + b'|SPLIT|' + encoded_chunks[len(data_chunks)]
-    
+                idx = chunk_count + (j - base_len)
+                encoded_chunks[idx] += bytes([b])
+    length_info = [len(c) for c in data_chunks]
+    length_data = json.dumps(length_info).encode("utf-8")
+    if len(encoded_chunks) > chunk_count:
+        encoded_chunks[chunk_count] = length_data + b"|SPLIT|" + encoded_chunks[chunk_count]
     return encoded_chunks
 
 
@@ -316,20 +283,30 @@ def main():
 
     # 将帧写盘 | Write frames to disk
     tmp_out = frames_dir
-    for i, im in enumerate(frames):
+    def _save(idx_img):
+        i, im = idx_img
         im.save(tmp_out / f"{i:06d}.png")
+    max_workers = max(1, min(8, (os.cpu_count() or 4)))
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as ex:
+        list(ex.map(_save, enumerate(frames)))
 
     # 用ffmpeg合成视频 | Compose video using ffmpeg
     ffmpeg = os.environ.get('FFMPEG_CMD', 'ffmpeg')
+    preset = os.environ.get('FFMPEG_PRESET', 'medium')
+    crf = os.environ.get('FFMPEG_CRF', '20')
     cmd = [
         ffmpeg, '-y', '-r', str(args.fps), '-i', str(tmp_out / '%06d.png'),
-        '-c:v', 'libx264', '-preset', 'slow', '-crf', '16', '-pix_fmt', 'yuv420p', args.output
+        '-c:v', 'libx264', '-preset', preset, '-crf', crf, '-pix_fmt', 'yuv420p', args.output
     ]
     try:
         subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as e:
         print(e.stdout.decode('utf-8', errors='ignore'))
         sys.exit(3)
+    try:
+        shutil.rmtree(tmp_out, ignore_errors=True)
+    except Exception:
+        pass
 
     # 生成清单（增强版） | Generate manifest (enhanced version)
     manifest = {

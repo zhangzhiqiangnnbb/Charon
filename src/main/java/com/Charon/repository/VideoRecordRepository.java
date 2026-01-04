@@ -11,7 +11,7 @@ import java.util.Optional;
 public interface VideoRecordRepository extends BaseMapper<VideoRecord> {
     default Optional<VideoRecord> findByJobId(String jobId) {
         LambdaQueryWrapper<VideoRecord> qw = new LambdaQueryWrapper<>();
-        qw.eq(VideoRecord::getJobId, jobId).last("limit 1");
+        qw.eq(VideoRecord::getJobId, jobId);
         return Optional.ofNullable(this.selectOne(qw));
     }
 }

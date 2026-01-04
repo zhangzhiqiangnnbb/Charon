@@ -12,10 +12,10 @@ import java.time.format.DateTimeFormatter;
 @Service
 public class StorageService {
 
-    @Value("${app.sample.storage.type:local}")
+    @Value("${app.storage.type:local}")
     private String storageType; // local|minio (预留) | reserved for future use
 
-    @Value("${app.sample.storage.local.base-dir:${user.home}/video-store}")
+    @Value("${app.storage.local.base-dir:${user.home}/video-store}")
     private String baseDir;
 
     public String store(InputStream input, String filename) throws IOException {

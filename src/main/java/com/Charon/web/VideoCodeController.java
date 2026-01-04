@@ -11,6 +11,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -27,12 +28,14 @@ public class VideoCodeController {
     private final VideoRecordRepository repo;
     private final StorageService storageService;
     private final AppDefaultProperties appDefaults;
+    private final com.Charon.service.JobRegistry jobRegistry;
 
-    public VideoCodeController(VideoCodeService service, VideoRecordRepository repo, StorageService storageService, AppDefaultProperties appDefaults) {
+    public VideoCodeController(VideoCodeService service, VideoRecordRepository repo, StorageService storageService, AppDefaultProperties appDefaults, com.Charon.service.JobRegistry jobRegistry) {
         this.service = service;
         this.repo = repo;
         this.storageService = storageService;
         this.appDefaults = appDefaults;
+        this.jobRegistry = jobRegistry;
     }
 
     public record EncodeRequest(
@@ -60,7 +63,7 @@ public class VideoCodeController {
         boolean enableFec = req.enableFec() == null ? appDefaults.getEnableFec() : req.enableFec();
         Integer fecParityPercent = req.fecParityPercent() == null ? appDefaults.getFecParityPercent() : req.fecParityPercent();
 
-        Map<String, Object> result = service.process(
+        Map<String, Object> result = service.submit(
                 req.file(), gridN, fps, resolution, req.width(), req.height(),
                 enableFec, fecParityPercent, req.passphrase(), req.publicKeyHint(),
                 req.privateKeyFrameIndex(), req.privateKeyFramePassword(), req.obfuscationSeed(), req.obfuscationFile()
@@ -70,7 +73,8 @@ public class VideoCodeController {
 
     @GetMapping("/download/{id}")
     public ResponseEntity<Resource> downloadById(@PathVariable("id") Long id,
-                                                 @RequestParam(defaultValue = "video") String type) {
+                                                 @RequestParam(defaultValue = "video") String type,
+                                                 @RequestHeader(value = "Range", required = false) String range) {
         VideoRecord vr = repo.selectById(id);
         if (vr == null) {
             return ResponseEntity.notFound().build();
@@ -79,15 +83,13 @@ public class VideoCodeController {
         Path p = storageService.loadAsPath(path);
         Resource res = new FileSystemResource(p);
         String filename = p.getFileName().toString();
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename)
-                .contentType("manifest".equalsIgnoreCase(type) ? MediaType.APPLICATION_JSON : MediaType.APPLICATION_OCTET_STREAM)
-                .body(res);
+        return buildDownloadResponse(res, p, filename, "manifest".equalsIgnoreCase(type), range);
     }
 
     @GetMapping("/download/by-job/{jobId}")
     public ResponseEntity<Resource> downloadByJobId(@PathVariable("jobId") String jobId,
-                                                    @RequestParam(defaultValue = "video") String type) {
+                                                    @RequestParam(defaultValue = "video") String type,
+                                                    @RequestHeader(value = "Range", required = false) String range) {
         VideoRecord vr = repo.findByJobId(jobId).orElse(null);
         if (vr == null) {
             return ResponseEntity.notFound().build();
@@ -96,9 +98,82 @@ public class VideoCodeController {
         Path p = storageService.loadAsPath(path);
         Resource res = new FileSystemResource(p);
         String filename = p.getFileName().toString();
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename)
-                .contentType("manifest".equalsIgnoreCase(type) ? MediaType.APPLICATION_JSON : MediaType.APPLICATION_OCTET_STREAM)
-                .body(res);
+        return buildDownloadResponse(res, p, filename, "manifest".equalsIgnoreCase(type), range);
+    }
+
+    @GetMapping("/status/{jobId}")
+    public ResponseEntity<Map<String, Object>> status(@PathVariable("jobId") String jobId) {
+        VideoRecord vr = repo.findByJobId(jobId).orElse(null);
+        if (vr == null) {
+            return ResponseEntity.notFound().build();
+        }
+        Map<String, Object> body = new java.util.HashMap<>();
+        body.put("jobId", jobId);
+        body.put("status", vr.getStatus().name());
+        body.put("id", vr.getId());
+        body.put("error", vr.getErrorMessage());
+        return ResponseEntity.ok(body);
+    }
+
+    @PostMapping("/cancel/{jobId}")
+    public ResponseEntity<Map<String, Object>> cancel(@PathVariable("jobId") String jobId) {
+        VideoRecord vr = repo.findByJobId(jobId).orElse(null);
+        if (vr == null) {
+            return ResponseEntity.notFound().build();
+        }
+        boolean ok = jobRegistry.cancel(jobId);
+        if (ok) {
+            vr.setStatus(VideoRecord.ProcessStatus.FAILED);
+            vr.setErrorMessage("Cancelled");
+            repo.updateById(vr);
+        }
+        Map<String, Object> body = new java.util.HashMap<>();
+        body.put("jobId", jobId);
+        body.put("cancelled", ok);
+        return ResponseEntity.ok(body);
+    }
+
+    private ResponseEntity<Resource> buildDownloadResponse(Resource res, Path p, String filename, boolean isManifest, String rangeHeader) {
+        try {
+            long fileSize = java.nio.file.Files.size(p);
+            MediaType mediaType = isManifest ? MediaType.APPLICATION_JSON : MediaType.APPLICATION_OCTET_STREAM;
+            if (rangeHeader != null && rangeHeader.startsWith("bytes=")) {
+                String r = rangeHeader.substring(6);
+                String[] parts = r.split("-");
+                long start = Long.parseLong(parts[0]);
+                long end = parts.length > 1 && !parts[1].isEmpty() ? Long.parseLong(parts[1]) : (fileSize - 1);
+                if (start < 0 || end >= fileSize || start > end) {
+                    return ResponseEntity.status(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE)
+                            .header(HttpHeaders.CONTENT_RANGE, "bytes */" + fileSize)
+                            .build();
+                }
+                long length = end - start + 1;
+                byte[] data;
+                try (java.io.RandomAccessFile raf = new java.io.RandomAccessFile(p.toFile(), "r")) {
+                    raf.seek(start);
+                    data = new byte[(int) Math.min(length, 5 * 1024 * 1024)];
+                    int read = raf.read(data);
+                    if (read < data.length) {
+                        data = java.util.Arrays.copyOf(data, read);
+                    }
+                }
+                org.springframework.core.io.ByteArrayResource part = new org.springframework.core.io.ByteArrayResource(data);
+                return ResponseEntity.status(HttpStatus.PARTIAL_CONTENT)
+                        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename)
+                        .header(HttpHeaders.ACCEPT_RANGES, "bytes")
+                        .header(HttpHeaders.CONTENT_RANGE, "bytes " + start + "-" + (start + data.length - 1) + "/" + fileSize)
+                        .contentType(mediaType)
+                        .contentLength(data.length)
+                        .body(part);
+            }
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename)
+                    .header(HttpHeaders.ACCEPT_RANGES, "bytes")
+                    .contentType(mediaType)
+                    .contentLength(fileSize)
+                    .body(res);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 }
