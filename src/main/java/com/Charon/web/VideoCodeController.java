@@ -112,6 +112,8 @@ public class VideoCodeController {
         body.put("status", vr.getStatus().name());
         body.put("id", vr.getId());
         body.put("error", vr.getErrorMessage());
+        body.put("progress", jobRegistry.getProgress(jobId));
+        body.put("stage", jobRegistry.getStage(jobId));
         return ResponseEntity.ok(body);
     }
 
@@ -166,12 +168,12 @@ public class VideoCodeController {
                         .contentLength(data.length)
                         .body(part);
             }
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename)
-                    .header(HttpHeaders.ACCEPT_RANGES, "bytes")
-                    .contentType(mediaType)
-                    .contentLength(fileSize)
-                    .body(res);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename + "; filename*=UTF-8''" + java.net.URLEncoder.encode(filename, java.nio.charset.StandardCharsets.UTF_8))
+                .header(HttpHeaders.ACCEPT_RANGES, "bytes")
+                .contentType(mediaType)
+                .contentLength(fileSize)
+                .body(res);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
