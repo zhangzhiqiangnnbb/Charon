@@ -1,65 +1,65 @@
 # Charon
 
-一个基于 Spring Boot 的“文件 ↔ 二维码视频”编码/解码服务示例工程：上传文件后通过 Python + FFmpeg 将数据编码为视频（以及 manifest），并提供任务状态查询与下载接口。
+A Spring Boot sample service for “file ↔ QR-code video” encoding/decoding. Upload a file, then the service uses Python + FFmpeg to encode data into a video (and a manifest), and provides job status and download APIs.
 
-## 功能
+## Features
 
-- 文件编码为二维码视频（支持 FEC、参数可配置）
-- 任务状态查询 / 取消任务
-- 按 `id` 或 `jobId` 下载视频与 manifest
-- 默认 H2 内存库快速试跑，可切换 MySQL（已包含 Flyway 迁移脚本）
-- 本地文件系统存储（预留扩展）
+- Encode files into QR-code videos (FEC supported, configurable parameters)
+- Job status query / job cancellation
+- Download video and manifest by `id` or `jobId`
+- H2 in-memory DB by default for quick start; can switch to MySQL (Flyway migration included)
+- Local filesystem storage (designed to be extensible)
 
-## 环境要求
+## Requirements
 
-- JDK 24（项目 `pom.xml` 里配置了 `java.version=24`）
-- Python 3（用于执行 `scripts/*.py`）
-- FFmpeg（Windows 默认使用 `tools/ffmpeg.exe`；其他系统建议配置为 `ffmpeg` 并确保在 PATH）
+- JDK 24 (`pom.xml` sets `java.version=24`)
+- Python 3 (to run `scripts/*.py`)
+- FFmpeg (Windows defaults to `tools/ffmpeg.exe`; on other OSes, set to `ffmpeg` and ensure it is on PATH)
 
-安装 Python 依赖：
+Install Python dependencies:
 
 ```bash
 python -m pip install -r scripts/requirements.txt
 ```
 
-## 快速开始
+## Quick Start
 
-启动服务：
+Start the service:
 
 ```bash
 ./mvnw spring-boot:run
 ```
 
-默认端口：`http://localhost:8080`
+Default base URL: `http://localhost:8080`
 
-## 配置
+## Configuration
 
-核心配置位于 [application.properties](file:///c:/work/project/Charon/src/main/resources/application.properties)：
+Core config is in [application.properties](file:///c:/work/project/Charon/src/main/resources/application.properties):
 
-- `app.python.cmd`：Python 可执行文件（默认 `python`）
-- `app.workdir`：工作目录（帧/视频/临时文件）
-- `app.ffmpeg.cmd`：FFmpeg 可执行文件（默认 `tools/ffmpeg.exe`）
-- `app.storage.local.base-dir`：对象存储落地目录（默认 `${user.home}/video-store`）
-- `app.jobs.maxConcurrency`：最大并发任务数
+- `app.python.cmd`: Python executable (default `python`)
+- `app.workdir`: Working directory (frames/video/temp files)
+- `app.ffmpeg.cmd`: FFmpeg executable (default `tools/ffmpeg.exe`)
+- `app.storage.local.base-dir`: Storage directory (default `${user.home}/video-store`)
+- `app.jobs.maxConcurrency`: Max concurrent jobs
 
-如需切换 MySQL，可参考 [application-mysql.properties](file:///c:/work/project/Charon/src/main/resources/application-mysql.properties)。
+To switch to MySQL, see [application-mysql.properties](file:///c:/work/project/Charon/src/main/resources/application-mysql.properties).
 
 ## API
 
-接口定义见 [VideoCodeController](file:///c:/work/project/Charon/src/main/java/com/Charon/web/VideoCodeController.java)。
+API definitions are in [VideoCodeController](file:///c:/work/project/Charon/src/main/java/com/Charon/web/VideoCodeController.java).
 
-### 编码上传
+### Encode (Upload)
 
-`POST /api/video-code/encode`（`multipart/form-data`）
+`POST /api/video-code/encode` (`multipart/form-data`)
 
-必填字段：
+Required fields:
 
 - `file`
 - `passphrase`
 - `publicKeyHint`
 - `privateKeyFramePassword`
 
-示例：
+Example:
 
 ```bash
 curl -X POST "http://localhost:8080/api/video-code/encode" \
@@ -74,20 +74,20 @@ curl -X POST "http://localhost:8080/api/video-code/encode" \
   -F "privateKeyFramePassword=frame-secret"
 ```
 
-### 状态查询
+### Job Status
 
 `GET /api/video-code/status/{jobId}`
 
-### 取消任务
+### Cancel Job
 
 `POST /api/video-code/cancel/{jobId}`
 
-### 下载
+### Download
 
 - `GET /api/video-code/download/{id}?type=video|manifest`
 - `GET /api/video-code/download/by-job/{jobId}?type=video|manifest`
 
 ## License
 
-Apache License 2.0，见 [LICENSE](file:///c:/work/project/Charon/LICENSE)。
+Apache License 2.0. See [LICENSE](file:///c:/work/project/Charon/LICENSE).
 
