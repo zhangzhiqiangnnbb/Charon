@@ -21,11 +21,20 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
 
+    @ExceptionHandler(org.springframework.security.core.AuthenticationException.class)
+    public ResponseEntity<Map<String, Object>> handleAuthenticationException(Exception ex) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("code", "UNAUTHORIZED");
+        body.put("message", "Invalid credentials");
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGeneric(Exception ex) {
         Map<String, Object> body = new HashMap<>();
         body.put("code", "INTERNAL_ERROR");
         body.put("message", "Server error");
+        // In production, do not return ex.getMessage() to client for security
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
     }
 }

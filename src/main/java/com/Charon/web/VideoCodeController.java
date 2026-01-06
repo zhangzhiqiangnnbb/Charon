@@ -16,6 +16,8 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.Charon.service.command.SubmitJobCommand;
+
 import java.nio.file.Path;
 import java.util.Map;
 
@@ -63,11 +65,13 @@ public class VideoCodeController {
         boolean enableFec = req.enableFec() == null ? appDefaults.getEnableFec() : req.enableFec();
         Integer fecParityPercent = req.fecParityPercent() == null ? appDefaults.getFecParityPercent() : req.fecParityPercent();
 
-        Map<String, Object> result = service.submit(
+        SubmitJobCommand cmd = new SubmitJobCommand(
                 req.file(), gridN, fps, resolution, req.width(), req.height(),
                 enableFec, fecParityPercent, req.passphrase(), req.publicKeyHint(),
                 req.privateKeyFrameIndex(), req.privateKeyFramePassword(), req.obfuscationSeed(), req.obfuscationFile()
         );
+
+        Map<String, Object> result = service.submit(cmd);
         return ResponseEntity.ok(result);
     }
 

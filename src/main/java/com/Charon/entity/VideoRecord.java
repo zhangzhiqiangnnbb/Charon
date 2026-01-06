@@ -81,4 +81,19 @@ public class VideoRecord {
     public enum ProcessStatus {
         PROCESSING, COMPLETED, FAILED
     }
+
+    public void complete(String storagePath, String manifestPath, Long outputVideoSize, Integer outputFrameCount) {
+        this.storagePath = storagePath;
+        this.manifestPath = manifestPath;
+        this.outputVideoSize = outputVideoSize;
+        this.outputFrameCount = outputFrameCount;
+        this.status = ProcessStatus.COMPLETED;
+        this.completedAt = LocalDateTime.now();
+    }
+
+    public void fail(String errorMessage) {
+        this.errorMessage = errorMessage;
+        this.status = ProcessStatus.FAILED;
+        this.completedAt = LocalDateTime.now();
+    }
 }
