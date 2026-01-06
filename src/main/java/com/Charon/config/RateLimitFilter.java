@@ -1,5 +1,7 @@
 package com.Charon.config;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -9,30 +11,43 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Component
 public class RateLimitFilter extends OncePerRequestFilter {
     private static final int LIMIT_PER_MINUTE = 120;
-    private final Map<String, Window> windows = new ConcurrentHashMap<>();
+    
+    // Fix: Use Caffeine Cache to automatically evict old entries (Memory Leak Fix)
+    private final Cache<String, Window> windows = Caffeine.newBuilder()
+            .expireAfterAccess(5, TimeUnit.MINUTES) // Clean up inactive IPs
+            .maximumSize(10000) // Prevent DDoS from filling memory
+            .build();
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         String ip = request.getRemoteAddr();
         long now = Instant.now().getEpochSecond();
-        Window w = windows.computeIfAbsent(ip, k -> new Window(now / 60));
+        long currentWin = now / 60;
+
+        Window w = windows.get(ip, k -> new Window(currentWin));
+        
+        // Double check for null in case cache fails (unlikely)
+        if (w == null) {
+             filterChain.doFilter(request, response);
+             return;
+        }
+
         synchronized (w) {
-            long currentWin = now / 60;
             if (w.win != currentWin) {
                 w.win = currentWin;
-                w.count = 0;
+                w.count.set(0);
             }
-            w.count++;
-            if (w.count > LIMIT_PER_MINUTE) {
+            if (w.count.incrementAndGet() > LIMIT_PER_MINUTE) {
                 response.setStatus(429);
-                response.getWriter().write("{\"code\":\"RATE_LIMIT\",\"message\":\"Too many requests\"}");
+                response.setContentType("application/json");
+                response.getWriter().write("{\"code\":\"RATE_LIMIT\",\"message\":\"Too many requests\",\"data\":null,\"traceId\":null}");
                 return;
             }
         }
@@ -41,8 +56,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     private static class Window {
         long win;
-        int count;
-        Window(long w) { this.win = w; this.count = 0; }
+        final AtomicInteger count = new AtomicInteger(0);
+        Window(long w) { this.win = w; }
     }
 }
-

@@ -10,6 +10,9 @@ import com.Charon.service.port.VideoEncodingRequest;
 import com.Charon.storage.StorageService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,9 +43,15 @@ public class VideoCodeService {
     private final JobRegistry jobs;
     private final JobProducer jobProducer;
     private final List<VideoEncoder> videoEncoders;
+    private final MeterRegistry meterRegistry;
     private static final Logger log = LoggerFactory.getLogger(VideoCodeService.class);
 
     public Map<String, Object> submit(SubmitJobCommand cmd) throws IOException {
+        Counter.builder("video.job.submit")
+                .description("Total number of submitted video encoding jobs")
+                .register(meterRegistry)
+                .increment();
+
         String jobId = UUID.randomUUID().toString();
         Path jobDir = Path.of(workdir, jobId);
         Files.createDirectories(jobDir);
@@ -104,6 +113,9 @@ public class VideoCodeService {
 
     public void executeJob(JobMessage msg) {
         String jid = msg.getJobId();
+        
+        Timer.Sample sample = Timer.start(meterRegistry);
+
         Path jobDirFinal = Path.of(msg.getJobDirPath());
         VideoRecord vr = repo.findByJobId(jid).orElse(null);
         if (vr == null) {
@@ -169,12 +181,31 @@ public class VideoCodeService {
             repo.updateById(vr);
             jobs.setProgress(jid, 100, "DONE");
             deleteQuietly(jobDirFinal);
+            
+            sample.stop(Timer.builder("video.job.duration")
+                    .description("Time taken to process video encoding job")
+                    .tag("status", "success")
+                    .tag("mode", msg.getProcessingMode())
+                    .register(meterRegistry));
+                    
             log.info("job done {}", jid);
 
         } catch (Exception e) {
             vr.fail(e.getMessage());
             repo.updateById(vr);
             deleteQuietly(jobDirFinal);
+            
+            sample.stop(Timer.builder("video.job.duration")
+                    .description("Time taken to process video encoding job")
+                    .tag("status", "failure")
+                    .tag("mode", msg.getProcessingMode())
+                    .register(meterRegistry));
+            
+            Counter.builder("video.job.failure")
+                    .description("Total number of failed jobs")
+                    .register(meterRegistry)
+                    .increment();
+
             log.error("job error {} {}", jid, e.getMessage());
         }
     }
