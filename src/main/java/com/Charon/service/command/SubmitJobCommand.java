@@ -16,5 +16,6 @@ public record SubmitJobCommand(
     Integer privateKeyFrameIndex,
     String privateKeyFramePassword,
     Integer obfuscationSeed,
-    MultipartFile obfuscationFile
+    MultipartFile obfuscationFile,
+    String processingMode // CPU, GPU, CLOUD
 ) {}

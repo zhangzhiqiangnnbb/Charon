@@ -23,4 +23,5 @@ public class JobMessage {
     private String privateKeyFramePassword;
     private Integer width;
     private Integer height;
+    private String processingMode;
 }

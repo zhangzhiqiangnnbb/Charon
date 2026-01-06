@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -38,7 +39,7 @@ public class VideoCodeService {
     private final StorageService storage;
     private final JobRegistry jobs;
     private final JobProducer jobProducer;
-    private final VideoEncoder videoEncoder;
+    private final List<VideoEncoder> videoEncoders;
     private static final Logger log = LoggerFactory.getLogger(VideoCodeService.class);
 
     public Map<String, Object> submit(SubmitJobCommand cmd) throws IOException {
@@ -70,6 +71,7 @@ public class VideoCodeService {
         vr.setPublicKeyHint(cmd.publicKeyHint());
         vr.setPrivateKeyFrameIndex(cmd.privateKeyFrameIndex());
         vr.setObfuscationSeed(cmd.obfuscationSeed());
+        vr.setProcessingMode(cmd.processingMode() != null ? cmd.processingMode() : "CPU");
         vr.setStatus(VideoRecord.ProcessStatus.PROCESSING);
         vr.setCreatedAt(LocalDateTime.now());
         repo.insert(vr);
@@ -90,6 +92,7 @@ public class VideoCodeService {
                 .privateKeyFramePassword(cmd.privateKeyFramePassword())
                 .width(cmd.width())
                 .height(cmd.height())
+                .processingMode(vr.getProcessingMode())
                 .build();
 
         jobProducer.sendJob(msg);
@@ -131,11 +134,18 @@ public class VideoCodeService {
                     msg.getPassphrase(),
                     msg.getPublicKeyHint(),
                     msg.getPrivateKeyFrameIndex(),
-                    msg.getPrivateKeyFramePassword()
+                    msg.getPrivateKeyFramePassword(),
+                    msg.getProcessingMode()
             );
 
+            // Select strategy
+            VideoEncoder encoder = videoEncoders.stream()
+                    .filter(e -> e.supports(msg.getProcessingMode()))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("No encoder found for mode: " + msg.getProcessingMode()));
+
             // Encoder handles process execution
-            videoEncoder.encode(request);
+            encoder.encode(request);
 
             jobs.setProgress(jid, 60, "PERSISTING");
             String videoStorePath;

@@ -18,5 +18,6 @@ public record VideoEncodingRequest(
     String passphrase,
     String publicKeyHint,
     Integer privateKeyFrameIndex,
-    String privateKeyFramePassword
+    String privateKeyFramePassword,
+    String processingMode // CPU, GPU, CLOUD
 ) {}

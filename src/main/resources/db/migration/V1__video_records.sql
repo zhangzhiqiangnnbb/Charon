@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS video_records (
   privateKeyFrameIndex INT,
   obfuscationSeed INT,
   obfuscationFilePath VARCHAR(1024),
+  processingMode VARCHAR(16),
   status VARCHAR(16),
   errorMessage VARCHAR(2048),
   createdAt TIMESTAMP,

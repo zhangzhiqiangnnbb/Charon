@@ -155,6 +155,7 @@ def main():
     ap.add_argument('--privkey-frame', type=int, default=0)
     ap.add_argument('--privkey-frame-pass', required=True)
     ap.add_argument('--obfuscation')
+    ap.add_argument('--codec', default='libx264', help='Video codec (libx264, h264_nvenc, h264_qsv, etc.)')
     args = ap.parse_args()
 
     # 分辨率 | Resolution
@@ -294,10 +295,20 @@ def main():
     ffmpeg = os.environ.get('FFMPEG_CMD', 'ffmpeg')
     preset = os.environ.get('FFMPEG_PRESET', 'medium')
     crf = os.environ.get('FFMPEG_CRF', '20')
+    
+    # 根据codec调整参数 | Adjust parameters based on codec
+    codec_args = ['-c:v', args.codec]
+    if 'nvenc' in args.codec:
+        codec_args.extend(['-preset', 'p4', '-rc', 'vbr']) # NVENC specific defaults
+    elif 'qsv' in args.codec:
+        codec_args.extend(['-global_quality', '20']) # QSV specific defaults
+    else:
+        codec_args.extend(['-preset', preset, '-crf', crf])
+
     cmd = [
-        ffmpeg, '-y', '-r', str(args.fps), '-i', str(tmp_out / '%06d.png'),
-        '-c:v', 'libx264', '-preset', preset, '-crf', crf, '-pix_fmt', 'yuv420p', args.output
-    ]
+        ffmpeg, '-y', '-r', str(args.fps), '-i', str(tmp_out / '%06d.png')
+    ] + codec_args + ['-pix_fmt', 'yuv420p', args.output]
+    
     try:
         subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as e:

@@ -35,7 +35,7 @@ class VideoCodeServiceTest {
     @Mock
     private JobProducer jobProducer;
     @Mock
-    private VideoEncoder videoEncoder;
+    private java.util.List<VideoEncoder> videoEncoders;
 
     @InjectMocks
     private VideoCodeService service;
@@ -52,7 +52,7 @@ class VideoCodeServiceTest {
         doNothing().when(jobProducer).sendJob(any(JobMessage.class));
 
         SubmitJobCommand cmd = new SubmitJobCommand(
-                file, 2, 60, "1080p", null, null, true, 20, "pass", "hint", null, "pass", null, null
+                file, 2, 60, "1080p", null, null, true, 20, "pass", "hint", null, "pass", null, null, "CPU"
         );
 
         Map<String, Object> result = service.submit(cmd);

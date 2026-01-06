@@ -29,6 +29,11 @@ public class PythonScriptVideoEncoder implements VideoEncoder {
     }
 
     @Override
+    public boolean supports(String mode) {
+        return "CPU".equalsIgnoreCase(mode) || "GPU".equalsIgnoreCase(mode);
+    }
+
+    @Override
     public String encode(VideoEncodingRequest request) throws Exception {
         String scriptPath = Path.of("scripts", "encode_qr_video.py").toAbsolutePath().toString();
         
@@ -42,6 +47,14 @@ public class PythonScriptVideoEncoder implements VideoEncoder {
         cmd.add("--fps"); cmd.add(String.valueOf(request.fps()));
         cmd.add("--resolution"); cmd.add(request.resolution());
         cmd.add("--enable-fec"); cmd.add(String.valueOf(request.enableFec()));
+        
+        // Pass codec based on mode
+        if ("GPU".equalsIgnoreCase(request.processingMode())) {
+            // Default to NVENC, can be made configurable
+            cmd.add("--codec"); cmd.add("h264_nvenc");
+        } else {
+            cmd.add("--codec"); cmd.add("libx264");
+        }
         
         double fecRatio = request.fecParityPercent() == null ? 0.2 : 
                           Math.max(0.15, Math.min(0.35, request.fecParityPercent() / 100.0));

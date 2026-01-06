@@ -54,7 +54,8 @@ public class VideoCodeController {
             @Min(0) Integer privateKeyFrameIndex, // 私钥帧索引（用于解密） | Private key frame index (for decryption)
             @NotBlank String privateKeyFramePassword, // 私钥帧的保护密码（解密私钥） | Password protecting the private key frame (decrypts private key)
             @Min(0) Integer obfuscationSeed, // 混淆种子（若启用混淆） | Obfuscation seed (if enabled)
-            @RequestParam(required = false) MultipartFile obfuscationFile // 混淆验证文件（可选） | Obfuscation verification file (optional)
+            @RequestParam(required = false) MultipartFile obfuscationFile, // 混淆验证文件（可选） | Obfuscation verification file (optional)
+            @Pattern(regexp = "(?i)CPU|GPU|CLOUD") String processingMode // 处理模式：CPU, GPU, CLOUD | Processing mode: CPU, GPU, CLOUD
     ) {}
 
     @PostMapping(value = "/encode", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -64,11 +65,13 @@ public class VideoCodeController {
         String resolution = req.resolution() == null ? appDefaults.getResolution() : req.resolution();
         boolean enableFec = req.enableFec() == null ? appDefaults.getEnableFec() : req.enableFec();
         Integer fecParityPercent = req.fecParityPercent() == null ? appDefaults.getFecParityPercent() : req.fecParityPercent();
+        String processingMode = req.processingMode() == null ? "CPU" : req.processingMode().toUpperCase();
 
         SubmitJobCommand cmd = new SubmitJobCommand(
                 req.file(), gridN, fps, resolution, req.width(), req.height(),
                 enableFec, fecParityPercent, req.passphrase(), req.publicKeyHint(),
-                req.privateKeyFrameIndex(), req.privateKeyFramePassword(), req.obfuscationSeed(), req.obfuscationFile()
+                req.privateKeyFrameIndex(), req.privateKeyFramePassword(), req.obfuscationSeed(), req.obfuscationFile(),
+                processingMode
         );
 
         Map<String, Object> result = service.submit(cmd);

@@ -58,6 +58,9 @@ public class VideoRecord {
     @TableField("obfuscationFilePath")
     private String obfuscationFilePath;   // 混淆文件存储路径（如果有） | Obfuscation file storage path (if any)
 
+    @TableField("processingMode")
+    private String processingMode; // 处理模式 (CPU, GPU, CLOUD)
+
     // 状态与时间 | Status and timestamps
     @TableField("status")
     private ProcessStatus status = ProcessStatus.PROCESSING; // 处理状态 | Processing status
