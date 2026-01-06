@@ -9,10 +9,10 @@
         <relativePath/>
     </parent>
     <groupId>com.lucas</groupId>
-    <artifactId>lucasdemo</artifactId>
+    <artifactId>Charon</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>lucasdemo</name>
-    <description>lucasdemo</description>
+    <name>Charon</name>
+    <description>Charon</description>
     <licenses>
         <license>
             <name>Apache License, Version 2.0</name>
