@@ -1,0 +1,65 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: charon-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: videodb
+      MYSQL_USER: videouser
+      MYSQL_PASSWORD: changeme
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  namesrv:
+    image: apache/rocketmq:4.9.7
+    container_name: charon-namesrv
+    command: sh mqnamesrv
+    ports:
+      - "9876:9876"
+
+  broker:
+    image: apache/rocketmq:4.9.7
+    container_name: charon-broker
+    command: sh mqbroker -n namesrv:9876 autoCreateTopicEnable=true
+    ports:
+      - "10911:10911"
+    depends_on:
+      - namesrv
+    environment:
+      - NAMESRV_ADDR=namesrv:9876
+
+  charon:
+    build: .
+    container_name: charon-app
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      namesrv:
+        condition: service_started
+      broker:
+        condition: service_started
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/videodb?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=utf8&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=videouser
+      - SPRING_DATASOURCE_PASSWORD=changeme
+      - ROCKETMQ_NAME_SERVER=namesrv:9876
+      - APP_WORKDIR=/data/video-qrcode
+      - APP_STORAGE_LOCAL_BASE_DIR=/data/video-store
+      - APP_PYTHON_CMD=python
+      - APP_FFMPEG_CMD=ffmpeg
+    volumes:
+      - charon_data:/data
+
+volumes:
+  mysql_data:
+  charon_data:

@@ -3,11 +3,13 @@
 cryptography>=41.0.0
 # 读取/写入图像 | Read/Write images
 Pillow>=9.5.0
+# 二维码生成 | QR Code generation
+qrcode[pil]>=7.4.2
 # 解析视频帧二维码 | Decode QR codes in frames
 pyzbar>=0.1.9
 # Reed-Solomon 纠错 | Reed-Solomon error correction
 reedsolo>=1.7.0
 # OpenCV 用于视频与图像处理 | OpenCV for video/image processing
-opencv-python>=4.8.0
+opencv-python-headless>=4.8.0
 # 生成视频/音视频处理 | Video generation / processing
 moviepy>=1.0.3
